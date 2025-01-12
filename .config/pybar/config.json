@@ -1,0 +1,11 @@
+{
+    "version": "1.0",
+    "separator": " | ",
+    "scripts": [
+        {"name": "date", "poll": 30},
+        {"name": "battery", "poll": 60},
+        {"name": "brightness", "poll": -1},
+        {"name": "volume", "poll": -1},
+        {"name": "weather", "poll": 120}
+    ]
+}

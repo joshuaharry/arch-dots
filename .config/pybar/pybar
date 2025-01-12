@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+import json
+import socket
+import subprocess
+import sys
+import threading
+import time
+import typing as T
+import ctypes
+
+from pathlib import Path
+
+# Scary magic to change the name of the process from 'python'
+# to 'pybar' so you can `pkill pybar` easily.
+libc = ctypes.CDLL("libc.so.6")
+libc.prctl(15, "pybar".encode(), 0, 0, 0)
+
+PYBAR_CONFIG_DIR = Path.home().joinpath(".config").joinpath("pybar")
+
+PYBAR_CONFIG_PATH = PYBAR_CONFIG_DIR.joinpath("config.json")
+
+if not PYBAR_CONFIG_PATH.exists():
+    print("Fatal error: Could not find Pybar config.")
+    print(f"Please create the file '{str(PYBAR_CONFIG_PATH)}' to use this program.")
+    sys.exit(1)
+
+
+class PybarScriptDescription(T.TypedDict):
+    name: str
+    poll: int
+
+
+class PybarScriptValue(T.TypedDict):
+    name: str
+    value: str
+
+
+class PybarConfig(T.TypedDict):
+    version: str
+    separator: str
+    scripts: list[PybarScriptDescription]
+
+
+CONFIG: PybarConfig = json.loads(PYBAR_CONFIG_PATH.read_text())
+
+SCRIPT_VALUES: list[PybarScriptValue] = [
+    PybarScriptValue(name=val["name"], value="?") for val in CONFIG["scripts"]
+]
+
+for script in SCRIPT_VALUES:
+    script_path = PYBAR_CONFIG_DIR.joinpath(script["name"])
+    if not script_path.exists():
+        print("Fatal error")
+        print(
+            f"Script '{script_path}' is defined in your config, but it doesn't exist."
+        )
+        sys.exit(1)
+
+
+def interval_run(script_name: str, interval: int):
+    subprocess.run([script_name])
+
+    if interval <= 0:
+        return
+
+    while True:
+        time.sleep(interval)
+        subprocess.run([script_name])
+
+
+def launch_subprocesses():
+    for script in CONFIG["scripts"]:
+        thread = threading.Thread(
+            target=interval_run,
+            args=(
+                str(PYBAR_CONFIG_DIR.joinpath(script["name"])),
+                script["poll"],
+            ),
+        )
+        thread.start()
+
+
+def print_status_bar(message):
+    """
+    Shell out to xsetroot to update the DWM status bar.
+    """
+    try:
+        subprocess.run(["xsetroot", "-name", message], check=True)
+    except subprocess.CalledProcessError as e:
+        print(e)
+        sys.exit(1)
+
+
+def process_incoming_message(message: str) -> str:
+    script, value = message.split("\n")
+    script, value = script.strip(), value.strip()
+    for val in SCRIPT_VALUES:
+        if val["name"] == script:
+            val["value"] = value
+    # Extra padding looks slightly nicer.
+    return f' {CONFIG["separator"].join(value["value"] for value in SCRIPT_VALUES)} '
+
+
+def start_socket_server():
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    abstract_socket_path = "\0status_socket"
+    sock.bind(abstract_socket_path)
+    sock.listen(1)
+    launch_subprocesses()
+    while True:
+        connection, _ = sock.accept()
+        try:
+            while True:
+                data = connection.recv(1024)
+                if not data:
+                    break
+                incoming_message = f"{data.decode('utf-8')}".strip()
+                new_status = process_incoming_message(incoming_message)
+                print_status_bar(new_status)
+        finally:
+            connection.close()
+
+
+if __name__ == "__main__":
+    start_socket_server()

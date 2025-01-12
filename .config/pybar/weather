@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+import urllib.request
+import json
+import socket
+
+# Dictionary mapping WMO weather codes to Unicode icons
+WEATHER_ICONS = {
+    0: "🌞",  # Clear sky
+    1: "🌤",  # Mainly clear
+    2: "⛅",  # Partly cloudy
+    3: "☁️",  # Cloudy
+    45: "🌧",  # Fog
+    48: "🌫",  # Depositing rime fog
+    51: "🌦",  # Light drizzle
+    53: "🌧",  # Moderate drizzle
+    55: "🌧",  # Dense drizzle
+    56: "🌧",  # Light freezing drizzle
+    57: "🌧",  # Dense freezing drizzle
+    61: "🌧",  # Slight rain
+    63: "🌧",  # Moderate rain
+    65: "🌧",  # Heavy rain
+    66: "🌧",  # Light freezing rain
+    67: "🌧",  # Heavy freezing rain
+    71: "🌨",  # Slight snow fall
+    73: "🌨",  # Moderate snow fall
+    75: "🌨",  # Heavy snow fall
+    77: "🌨",  # Snow grains
+    80: "🌧",  # Slight rain showers
+    81: "🌧",  # Moderate rain showers
+    82: "🌧",  # Violent rain showers
+    85: "🌨",  # Slight snow showers
+    86: "🌨",  # Heavy snow showers
+    95: "⛈",  # Thunderstorm
+    96: "⛈",  # Thunderstorm with slight hail
+    99: "⛈",  # Thunderstorm with heavy hail
+}
+
+
+def weather_info(weather_data):
+    # Extract the current temperature in Celsius
+    temp_celsius = weather_data["current"]["temperature_2m"]
+    # Convert Celsius to Fahrenheit
+    temp_fahrenheit = round((temp_celsius * 9 / 5) + 32)
+    # Get the weather icon for the current weather code
+    weather_code = weather_data["current"]["weather_code"]
+    weather_icon = WEATHER_ICONS.get(
+        weather_code, "🌐"
+    )  # Default to globe icon if code is unknown
+
+    return f"{weather_icon} {temp_fahrenheit}°F"
+
+
+def get(url: str) -> dict:
+    with urllib.request.urlopen(url) as response:
+        data = response.read().decode("utf-8")
+    return json.loads(data)
+
+
+def get_position() -> (float, float):
+    data = get("https://ipinfo.io/json")
+    location = data["loc"]
+    latitude, longitude = location.split(",")
+    latitude, longitude = float(latitude), float(longitude)
+    return (latitude, longitude)
+
+
+def get_weather(latitude: int, longitude: int) -> str:
+    data = get(
+        f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,is_day,rain,weather_code"
+    )
+    return weather_info(data)
+
+
+latitude, longitude = get_position()
+weather = get_weather(latitude, longitude)
+message = f"weather\n{weather}"
+
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+abstract_socket_name = "status_socket"
+sock.connect("\0" + abstract_socket_name)
+sock.sendall(message.encode("utf-8"))
+sock.close()

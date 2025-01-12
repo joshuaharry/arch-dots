@@ -1,0 +1,16 @@
+[init]
+	defaultBranch = main
+[user]
+	email = joshua@laptop
+	name = Joshua Hoeflich
+[alias]
+	co = checkout
+	sl = log --pretty=format:'%C(bold cyan)%h%Creset -%C(white)%d%Creset %s %Cgreen(%cr) %C(yellow)<%an>%Creset' --abbrev-commit -n 10
+	b  = branch
+  pu = push
+	cob = checkout -b
+  poh = push --set-upstream origin main
+[core]
+	editor = nvim
+[pager]
+	branch = false

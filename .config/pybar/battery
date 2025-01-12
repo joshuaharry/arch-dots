@@ -1,0 +1,26 @@
+#!/bin/sh
+BATTERY_STATUS="$(cat /sys/class/power_supply/BAT0/status)"
+BATTERY_PERCENT="$(cat /sys/class/power_supply/BAT0/capacity)"
+
+MESSAGE=""
+
+case "$BATTERY_STATUS" in
+    Full)
+	MESSAGE+="🔌 "
+        ;;
+    Charging)
+	MESSAGE+="🔌 "
+        ;;
+    Discharging)
+	MESSAGE+="🔋 "
+        ;;
+    *)
+	MESSAGE+="🔋 "
+        ;;
+esac
+
+MESSAGE+="$BATTERY_PERCENT"
+MESSAGE+="%"
+
+printf "%s\n%s\n" 'battery' "$MESSAGE" | socat - ABSTRACT-CLIENT:status_socket > /dev/null 2>&1
+

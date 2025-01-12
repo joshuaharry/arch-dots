@@ -1,0 +1,17 @@
+#!/bin/sh
+# POSIX aliases.
+alias aliases='nvim ~/.config/shell/aliases.sh'
+alias c='clear'
+alias e='exit'
+alias home='/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
+alias l='eza -l' 
+alias lh='eza -l -a'
+alias ls='eza -l'
+alias reload='unalias -a && . ~/.config/shell/aliases.sh'
+alias rimraf='rm -rf'
+alias update='paru -Syyu'
+alias v='nvim'
+alias vi='nvim'
+alias vim='nvim'
+alias vimrc='nvim ~/.config/nvim/init.lua'
+alias zshrc='nvim ~/.zshrc'

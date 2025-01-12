@@ -1,0 +1,4 @@
+#!/bin/sh
+DATE="$(date +"%l:%M %p")"
+printf "%s\n%s\n" 'date' "$DATE" | socat - ABSTRACT-CLIENT:status_socket > /dev/null 2>&1
+
