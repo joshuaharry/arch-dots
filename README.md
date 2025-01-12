@@ -61,4 +61,4 @@ could make my computer do for no other reason than that I enjoyed doing it.
 At the end of that journey of tinkering and play, even though I had never
 taken a computer science class as an undergraduate, I knew how to program.
 
-<img src="https://upload.wikimedia.org/wikipedia/commons/c/c0/Glider.svg" alt="Glider" width="200" />
+![Glider](https://upload.wikimedia.org/wikipedia/commons/4/45/Glider.svg)
